@@ -11,7 +11,6 @@ public class PushSceneResult {
 
     // 功能字段
     private boolean triggerSync;
-    private int sleepTs;
     private boolean reset;
     private String reason;
 
@@ -30,10 +29,6 @@ public class PushSceneResult {
 
     public boolean isTriggerSync() {
         return triggerSync;
-    }
-
-    public int getSleepTs() {
-        return sleepTs;
     }
 
     public boolean isReset() {

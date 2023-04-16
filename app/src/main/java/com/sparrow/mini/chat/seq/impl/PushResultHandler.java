@@ -31,13 +31,9 @@ public abstract class PushResultHandler implements IPushResultHandler {
         // 功能操作
         if (result.isTriggerSync()) {
             SyncServiceManager.get().getService(result.getScene()).startSync();
-            if (result.getSleepTs() > 0) {
-                ThreadPool.get().addDelayTask(() -> {
-                        SyncServiceManager.get().getService(result.getScene()).joinSync();
-                }, result.getSleepTs());
-            } else {
-                SyncServiceManager.get().getService(result.getScene()).joinSync();
-            }
+            ThreadPool.get().addTask(() -> {
+                    SyncServiceManager.get().getService(result.getScene()).joinSync();
+            });
         } else if (result.isReset()) {
             setCurSeqId(0);
         }

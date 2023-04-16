@@ -18,18 +18,27 @@ import com.sparrow.mini.chat.seq.interfaces.ISyncService;
 import com.sparrow.mini.chat.seq.entity.SyncState;
 import com.sparrow.mini.chat.seq.utils.SyncMsgCache;
 import com.sparrow.mini.chat.seq.utils.SyncMMKV;
+import com.sparrow.mini.chat.thread.ThreadPool;
 
 public abstract class SyncService implements ISyncService {
     protected MutableLiveData<SyncState> syncState = new MutableLiveData<>(SYNC_STATE_CREATE);
 
     @Override
     public void startSync() {
+        if (syncState.getValue() != SYNC_STATE_CREATE) {
+            return;
+        }
         syncState.setValue(SYNC_STATE_READY);
         SyncServiceManager.get().register(this);
     }
 
     @Override
     public void joinSync() {
+        if (syncState.getValue() == SYNC_STATE_CREATE
+                || syncState.getValue() == SYNC_STATE_RUNNING
+                || syncState.getValue() == SYNC_STATE_STOP) {
+            return;
+        }
         syncState.setValue(SYNC_STATE_RUNNING);
         SyncTaskQueue.get().put(createSyncTask());
     }
@@ -37,6 +46,11 @@ public abstract class SyncService implements ISyncService {
     @Override
     public void sleepSync(int timeOut) {
         syncState.setValue(SYNC_STATE_SUSPEND);
+        ThreadPool.get().addDelayTask(() -> {
+            if (syncState.getValue() == SYNC_STATE_SUSPEND) {
+                joinSync();
+            }
+        }, timeOut);
     }
 
     @Override
@@ -86,8 +100,7 @@ public abstract class SyncService implements ISyncService {
         } else if (result.isReset()) {
             setCurSeqId(0);
         } else if (result.isHasMore()) {
-            // 循环
-            SyncTaskQueue.get().put(createSyncTask());
+            joinSync();
         }
     }
 
